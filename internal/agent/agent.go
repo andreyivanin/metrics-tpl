@@ -79,7 +79,7 @@ func (m *Monitor) SendMetrics() {
 		url := CreateURL(name, value, m.SrvAddr)
 		log.Println(url)
 
-		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
 
 		request, err := http.NewRequestWithContext(ctx, http.MethodPost, url, nil)
