@@ -22,6 +22,7 @@ func NewRouter(storage *storage.MemStorage) (chi.Router, error) {
 	r.Route("/update", func(r chi.Router) {
 		// r.Post("/", customHandler.MetricJSON)
 		r.Route("/{mtype}/{mname}/{mvalue}", func(r chi.Router) {
+			r.Post("/", customHandler.MetricUpdate)
 			r.Get("/", customHandler.MetricUpdate)
 		})
 	})
