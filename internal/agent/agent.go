@@ -22,6 +22,7 @@ type Metric interface{}
 type Monitor struct {
 	values       runtime.MemStats
 	pollCounter  int
+	SrvAddr      string
 	UpdateTicker *time.Ticker
 	SendTicker   *time.Ticker
 	Metrics      map[string]Metric
@@ -29,6 +30,7 @@ type Monitor struct {
 
 func NewMonitor(cfg Config) Monitor {
 	return Monitor{
+		SrvAddr:      cfg.Address,
 		UpdateTicker: time.NewTicker(cfg.PollInterval),
 		SendTicker:   time.NewTicker(cfg.ReportInterval),
 		Metrics:      make(map[string]Metric, 29),
@@ -74,7 +76,7 @@ func (m *Monitor) SendMetrics() {
 	client := http.Client{}
 
 	for name, value := range m.Metrics {
-		url := CreateURL(name, value)
+		url := CreateURL(name, value, m.SrvAddr)
 		log.Println(url)
 
 		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
@@ -106,12 +108,12 @@ func (m *Monitor) SendMetrics() {
 	}
 }
 
-func CreateURL(name string, value Metric) string {
+func CreateURL(name string, value Metric, srvaddr string) string {
 	var u url.URL
 	var mtype string
 	var valuestring string
 	u.Scheme = "http"
-	u.Host = "localhost:8080"
+	u.Host = srvaddr
 
 	switch value := value.(type) {
 	case Gauge:
