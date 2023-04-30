@@ -72,19 +72,22 @@ func (h *Handler) MetricGet(w http.ResponseWriter, r *http.Request) {
 
 	switch mtype {
 	case "gauge":
-		metric := metric.(storage.Gauge)
-		metricconv := fmt.Sprintf("%.9g", metric)
-		w.Write([]byte(metricconv))
+		if metric, ok := metric.(storage.Gauge); ok {
+			metricconv := fmt.Sprintf("%.9g", metric)
+			w.Write([]byte(metricconv))
+			return
+		}
 
 	case "counter":
-		metric := metric.(storage.Gauge)
-		metricconv := strconv.Itoa(int(metric))
-		w.Write([]byte(metricconv))
-
-	default:
-		w.WriteHeader(http.StatusNotImplemented)
-		w.Write([]byte("Bad metric type"))
+		if metric, ok := metric.(storage.Counter); ok {
+			metricconv := strconv.Itoa(int(metric))
+			w.Write([]byte(metricconv))
+			return
+		}
 	}
+
+	w.WriteHeader(http.StatusNotImplemented)
+	w.Write([]byte("Bad metric type"))
 }
 
 func (h *Handler) MetricSummary(w http.ResponseWriter, r *http.Request) {
