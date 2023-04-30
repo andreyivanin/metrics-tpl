@@ -27,10 +27,10 @@ type Monitor struct {
 	Metrics      map[string]Metric
 }
 
-func NewMonitor() Monitor {
+func NewMonitor(cfg Config) Monitor {
 	return Monitor{
-		UpdateTicker: time.NewTicker(2 * time.Second),
-		SendTicker:   time.NewTicker(10 * time.Second),
+		UpdateTicker: time.NewTicker(cfg.PollInterval),
+		SendTicker:   time.NewTicker(cfg.ReportInterval),
 		Metrics:      make(map[string]Metric, 29),
 	}
 }

@@ -2,12 +2,17 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"metrics-tpl/internal/agent"
 	"time"
 )
 
 func main() {
-	monitor := agent.NewMonitor()
+	cfg, err := agent.GetConfig()
+	if err != nil {
+		log.Fatal(err)
+	}
+	monitor := agent.NewMonitor(cfg)
 
 	for {
 		select {
