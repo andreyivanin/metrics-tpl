@@ -34,3 +34,16 @@ func (s *MemStorage) UpdateMetric(name string, m Metric) (Metric, error) {
 
 	return s.Metrics[name], nil
 }
+
+func (s *MemStorage) GetMetric(mname string) (Metric, error) {
+	if metric, ok := s.Metrics[mname]; ok {
+		return metric, nil
+	}
+
+	return nil, errors.New("the metric isn't found")
+}
+
+func (s *MemStorage) GetAllMetrics() map[string]Metric {
+	return s.Metrics
+
+}

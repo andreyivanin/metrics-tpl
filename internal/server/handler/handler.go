@@ -1,10 +1,12 @@
 package handler
 
 import (
+	"fmt"
 	"metrics-tpl/internal/server/storage"
 	"net/http"
 	"strconv"
-	"strings"
+
+	"github.com/go-chi/chi"
 )
 
 type Handler struct {
@@ -18,86 +20,78 @@ func NewHandler(storage *storage.MemStorage) *Handler {
 func (h *Handler) MetricUpdate(w http.ResponseWriter, r *http.Request) {
 	var metric storage.Metric
 
-	url := r.URL.Path
-	fields := strings.Split(url, "/")
-
-	// mtype := chi.URLParam(r, "mtype")
-	// mname := chi.URLParam(r, "mname")
-	// mvalue := chi.URLParam(r, "mvalue")
+	mtype := chi.URLParam(r, "mtype")
+	mname := chi.URLParam(r, "mname")
+	mvalue := chi.URLParam(r, "mvalue")
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 
-	// switch mtype {
-	// case "gauge":
-	// 	mvalueconv, err := strconv.ParseFloat(mvalue, 64)
-	// 	if err != nil {
-	// 		w.WriteHeader(http.StatusBadRequest)
-	// 		w.Write([]byte("Bad metric value"))
-	// 		return
-	// 	}
-
-	// 	metric = storage.Gauge(mvalueconv)
-
-	// case "counter":
-	// 	mvalueconv, err := strconv.ParseInt(mvalue, 10, 64)
-	// 	if err != nil {
-	// 		w.WriteHeader(http.StatusBadRequest)
-	// 		w.Write([]byte("Bad metric value"))
-	// 		return
-	// 	}
-	// 	metric = storage.Counter(mvalueconv)
-
-	// default:
-	// 	w.WriteHeader(http.StatusBadRequest)
-	// 	w.Write([]byte("Bad metric type"))
-	// 	return
-	// }
-
-	if fields[3] == "" {
-		w.WriteHeader(http.StatusNotFound)
-		w.Write([]byte("Bad metric name"))
-		return
-	}
-
-	if len(fields) == 5 && fields[1] == "update" {
-		switch fields[2] {
-		case "gauge":
-			mvalueconv, err := strconv.ParseFloat(fields[4], 64)
-			if err != nil {
-				w.WriteHeader(http.StatusBadRequest)
-				w.Write([]byte("Bad metric value"))
-				return
-			}
-
-			metric = storage.Gauge(mvalueconv)
-
-		case "counter":
-			mvalueconv, err := strconv.ParseInt(fields[4], 10, 64)
-			if err != nil {
-				w.WriteHeader(http.StatusBadRequest)
-				w.Write([]byte("Bad metric value"))
-				return
-			}
-			metric = storage.Counter(mvalueconv)
-
-		default:
+	switch mtype {
+	case "gauge":
+		mvalueconv, err := strconv.ParseFloat(mvalue, 64)
+		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)
-			w.Write([]byte("Bad metric type"))
+			w.Write([]byte("Bad metric value"))
 			return
-
 		}
 
-		h.Storage.UpdateMetric(fields[3], metric)
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("The metric " + fields[3] + " was updated"))
+		metric = storage.Gauge(mvalueconv)
 
-	} else {
+	case "counter":
+		mvalueconv, err := strconv.ParseInt(mvalue, 10, 64)
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			w.Write([]byte("Bad metric value"))
+			return
+		}
+		metric = storage.Counter(mvalueconv)
+
+	default:
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte("Bad metric type"))
 		return
 	}
 
-	// h.Storage.UpdateMetric(mname, metric)
-	// w.WriteHeader(http.StatusOK)
-	// w.Write([]byte("The metric " + mname + " was updated"))
+	h.Storage.UpdateMetric(mname, metric)
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("The metric " + mname + " was updated"))
 
+}
+
+func (h *Handler) MetricGet(w http.ResponseWriter, r *http.Request) {
+	mtype := chi.URLParam(r, "mtype")
+	mname := chi.URLParam(r, "mname")
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+
+	metric, err := h.Storage.GetMetric(mname)
+	if err != nil {
+		w.WriteHeader(http.StatusNotFound)
+		w.Write([]byte("The metric isn't found"))
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+
+	switch mtype {
+	case "gauge":
+		metric := metric.(storage.Gauge)
+		metricconv := fmt.Sprintf("%.9g", metric)
+		w.Write([]byte(metricconv))
+
+	case "counter":
+		metric := metric.(storage.Gauge)
+		metricconv := strconv.Itoa(int(metric))
+		w.Write([]byte(metricconv))
+
+	default:
+		w.WriteHeader(http.StatusNotImplemented)
+		w.Write([]byte("Bad metric type"))
+	}
+}
+
+func (h *Handler) MetricSummary(w http.ResponseWriter, r *http.Request) {
+	metrics := h.Storage.GetAllMetrics()
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	for name, metric := range metrics {
+		valuestring := fmt.Sprintf("%v", metric)
+		w.Write([]byte(name + ": " + valuestring + "\n"))
+	}
 }
