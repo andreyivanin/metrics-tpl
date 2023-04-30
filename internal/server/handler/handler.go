@@ -52,6 +52,12 @@ func (h *Handler) MetricUpdate(w http.ResponseWriter, r *http.Request) {
 	// 	return
 	// }
 
+	if fields[3] == "" {
+		w.WriteHeader(http.StatusNotFound)
+		w.Write([]byte("Bad metric name"))
+		return
+	}
+
 	if len(fields) == 5 && fields[1] == "update" {
 		switch fields[2] {
 		case "gauge":
