@@ -50,7 +50,7 @@ func GetConfig() (Config, error) {
 	}
 
 	GetFlagConfig(&cfg)
-	GetEnvConfig(&cfg)
+	// GetEnvConfig(&cfg)
 
 	return cfg, nil
 
