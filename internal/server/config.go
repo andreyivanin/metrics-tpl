@@ -18,14 +18,14 @@ const (
 
 type Config struct {
 	Address string `env:"ADDRESS"`
-	// StoreInterval    time.Duration `env:"STORE_INTERVAL"`
+	// StoreInterval    int `env:"STORE_INTERVAL"`
 	// StoreFile        string        `env:"STORE_FILE"`
 	// RestoreSavedData bool          `env:"RESTORE"`
 }
 
 func GetFlagConfig(cfg *Config) error {
 	flag.StringVar(&cfg.Address, "a", cfg.Address, "server address and port")
-	// flag.DurationVar(&cfg.StoreInterval, "i", cfg.StoreInterval, "server store interval")
+	// flag.IntVar(&cfg.StoreInterval, "i", cfg.StoreInterval, "server store interval")
 	// flag.StringVar(&cfg.StoreFile, "f", cfg.StoreFile, "server db store file")
 	// flag.BoolVar(&cfg.RestoreSavedData, "r", cfg.RestoreSavedData, "server restore db from file on start?")
 	flag.Parse()
@@ -44,7 +44,7 @@ func GetEnvConfig(cfg *Config) error {
 func GetConfig() (Config, error) {
 	var cfg = Config{
 		Address: SERVERADDRPORT,
-		// StoreInterval:    STOREINTERVAL * time.Second,
+		// StoreInterval:    STOREINTERVAL,
 		// StoreFile:        STOREFILE,
 		// RestoreSavedData: RESTORE,
 	}
