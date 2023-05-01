@@ -3,7 +3,6 @@ package agent
 import (
 	"flag"
 	"log"
-	"time"
 
 	"github.com/caarlos0/env/v6"
 )
@@ -16,15 +15,15 @@ const (
 )
 
 type Config struct {
-	Address        string        `env:"ADDRESS"`
-	ReportInterval time.Duration `env:"REPORT_INTERVAL"`
-	PollInterval   time.Duration `env:"POLL_INTERVAL"`
+	Address        string `env:"ADDRESS"`
+	ReportInterval int    `env:"REPORT_INTERVAL"`
+	PollInterval   int    `env:"POLL_INTERVAL"`
 }
 
 func GetFlagConfig(cfg *Config) {
 	flag.StringVar(&cfg.Address, "a", cfg.Address, "server address and port")
-	flag.DurationVar(&cfg.ReportInterval, "r", cfg.ReportInterval, "agent report interval")
-	flag.DurationVar(&cfg.PollInterval, "p", cfg.PollInterval, "agent poll interval")
+	flag.IntVar(&cfg.ReportInterval, "r", cfg.ReportInterval, "agent report interval")
+	flag.IntVar(&cfg.PollInterval, "p", cfg.PollInterval, "agent poll interval")
 	flag.Parse()
 }
 
@@ -38,8 +37,8 @@ func GetEnvConfig(cfg *Config) {
 func GetConfig() (Config, error) {
 	var cfg = Config{
 		Address:        SERVERADDRPORT,
-		PollInterval:   POLLINTERVAL * time.Second,
-		ReportInterval: REPORTINTERVAL * time.Second,
+		PollInterval:   POLLINTERVAL,
+		ReportInterval: REPORTINTERVAL,
 	}
 
 	GetFlagConfig(&cfg)
