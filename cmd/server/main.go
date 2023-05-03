@@ -2,10 +2,9 @@ package main
 
 import (
 	"log"
-	"net/http"
-
 	"metrics-tpl/internal/server"
 	"metrics-tpl/internal/server/storage"
+	"net/http"
 )
 
 func main() {

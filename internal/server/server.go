@@ -2,9 +2,10 @@ package server
 
 import (
 	"github.com/go-chi/chi"
-	"github.com/go-chi/chi/middleware"
+	chiMiddleware "github.com/go-chi/chi/middleware"
 
 	"metrics-tpl/internal/server/handler"
+	"metrics-tpl/internal/server/middleware"
 	"metrics-tpl/internal/server/storage"
 )
 
@@ -13,10 +14,11 @@ func NewRouter(storage *storage.MemStorage) (chi.Router, error) {
 
 	r := chi.NewRouter()
 
-	r.Use(middleware.RequestID)
-	r.Use(middleware.RealIP)
+	r.Use(chiMiddleware.RequestID)
+	r.Use(chiMiddleware.RealIP)
+	// r.Use(chiMiddleware.Logger)
 	r.Use(middleware.Logger)
-	r.Use(middleware.Recoverer)
+	r.Use(chiMiddleware.Recoverer)
 	// r.Use(handler.GzipHandle)
 
 	r.Route("/update", func(r chi.Router) {
