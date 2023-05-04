@@ -67,48 +67,43 @@ func (h *Handler) MetricSummaryJSON(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 
-	MetricOK := true
-
 	jsonmetric := Metrics{}
 
 	if err := json.Unmarshal(b, &jsonmetric); err != nil {
 		log.Println(err)
 	}
 
-	switch jsonmetric.MType {
-	case "gauge":
-		if metric, err := h.Storage.GetMetric(jsonmetric.ID); err != nil {
-			log.Println(err)
-			MetricOK = false
-		} else {
-			metric := metric.(storage.Gauge)
-			jsonmetric.Value = (*float64)(&metric)
-		}
-	case "counter":
-		if metric, err := h.Storage.GetMetric(jsonmetric.ID); err != nil {
-			log.Println(err)
-			MetricOK = false
-		} else {
-			metric := metric.(storage.Counter)
-			jsonmetric.Delta = (*int64)(&metric)
-		}
-	default:
-		log.Println("wrong metric type")
-		MetricOK = false
-	}
+	metric, err := h.Storage.GetMetric(jsonmetric.ID)
 
-	if MetricOK {
-		metricsJSON, err := json.Marshal(jsonmetric)
-
-		if err != nil {
-			panic(err)
-		}
-
-		w.Header().Set("Content-Type", "application/json; charset=utf-8")
-		w.WriteHeader(http.StatusOK)
-		w.Write(metricsJSON)
-	} else {
+	if err != nil {
 		w.WriteHeader(http.StatusNotFound)
 		w.Write([]byte("One or several metrics weren't found"))
+		return
 	}
+
+	switch jsonmetric.MType {
+	case "gauge":
+		metric := metric.(storage.Gauge)
+		jsonmetric.Value = (*float64)(&metric)
+
+	case "counter":
+		metric := metric.(storage.Counter)
+		jsonmetric.Delta = (*int64)(&metric)
+
+	default:
+		w.WriteHeader(http.StatusNotFound)
+		w.Write([]byte("wrong metric type"))
+		log.Println("wrong metric type")
+	}
+
+	metricsJSON, err := json.Marshal(jsonmetric)
+
+	if err != nil {
+		log.Fatal(err)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+	w.Write(metricsJSON)
 }
