@@ -20,7 +20,7 @@ func main() {
 			monitor.UpdateMetrics()
 			fmt.Println("Metrics update", " - ", time.Now())
 		case <-monitor.SendTicker.C:
-			monitor.SendMetrics()
+			monitor.SendMetricsJSON()
 			fmt.Println("Metrics send", " - ", time.Now())
 		}
 	}
