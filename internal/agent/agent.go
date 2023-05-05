@@ -88,7 +88,7 @@ func (m *Monitor) SendMetrics() {
 			os.Exit(1)
 		}
 
-		request.Header.Set("Content-Type", "text/plain; charset=utf-8")
+		request.Header.Set("Content-Type", "text/plain")
 		response, err := client.Do(request)
 		if err != nil {
 			fmt.Println(err)

@@ -57,7 +57,7 @@ func (m *Monitor) SendMetricsJSON() {
 			log.Fatalln(err)
 		}
 
-		request.Header.Set("Content-Type", "application/json; charset=utf-8")
+		request.Header.Set("Content-Type", "application/json")
 		response, err := client.Do(request)
 		if err != nil {
 			fmt.Println(err)
