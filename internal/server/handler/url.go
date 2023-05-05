@@ -16,7 +16,7 @@ func (h *Handler) MetricUpdate(w http.ResponseWriter, r *http.Request) {
 	mtype := chi.URLParam(r, "mtype")
 	mname := chi.URLParam(r, "mname")
 	mvalue := chi.URLParam(r, "mvalue")
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.Header().Set("Content-Type", "text/html")
 
 	switch mtype {
 	case "gauge":
@@ -53,7 +53,7 @@ func (h *Handler) MetricUpdate(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) MetricGet(w http.ResponseWriter, r *http.Request) {
 	mtype := chi.URLParam(r, "mtype")
 	mname := chi.URLParam(r, "mname")
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.Header().Set("Content-Type", "text/html")
 
 	metric, err := h.Storage.GetMetric(mname)
 	if err != nil {
@@ -85,7 +85,7 @@ func (h *Handler) MetricGet(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) MetricSummary(w http.ResponseWriter, r *http.Request) {
 	metrics := h.Storage.GetAllMetrics()
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.Header().Set("Content-Type", "text/html")
 	for name, metric := range metrics {
 		valuestring := fmt.Sprintf("%v", metric)
 		w.Write([]byte(name + ": " + valuestring + "\n"))
