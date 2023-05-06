@@ -26,6 +26,7 @@ func GzipHandle(next http.Handler) http.Handler {
 		compressContent := [...]string{
 			"application/json",
 			"text/html",
+			"",
 		}
 
 		var contentOK bool
