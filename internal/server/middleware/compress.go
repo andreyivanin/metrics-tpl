@@ -24,7 +24,7 @@ func GzipHandle(next http.Handler) http.Handler {
 		}
 
 		compressContent := [...]string{
-			"applcation/json",
+			"application/json",
 			"text/html",
 		}
 
