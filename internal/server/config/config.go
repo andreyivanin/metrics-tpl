@@ -13,7 +13,7 @@ import (
 const (
 	SERVERADDRPORT = "localhost:8080"
 	STOREINTERVAL  = 300
-	STOREFILE      = "tmp/metrics-db.json"
+	STOREFILE      = "metrics-db.json"
 	RESTORE        = true
 )
 
