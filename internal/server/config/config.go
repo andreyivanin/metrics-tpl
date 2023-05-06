@@ -46,7 +46,11 @@ func getEnv(cfg *Config) error {
 		return err
 	}
 
-	StoreIntervalEnv := os.Getenv("STORE_INTERVAL")
+	StoreIntervalEnv, ok := os.LookupEnv("STOREINTERVAL")
+	if !ok {
+		return nil
+	}
+
 	StoreIntervalEnvInt, err := strconv.Atoi(StoreIntervalEnv)
 	if err != nil {
 		return err
