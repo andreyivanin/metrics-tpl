@@ -3,6 +3,8 @@ package config
 import (
 	"flag"
 	"log"
+	"os"
+	"strconv"
 	"time"
 
 	// "time"
@@ -18,10 +20,10 @@ const (
 )
 
 type Config struct {
-	Address          string        `env:"ADDRESS"`
-	StoreInterval    time.Duration `env:"STORE_INTERVAL"`
-	StoreFile        string        `env:"STORE_FILE"`
-	RestoreSavedData bool          `env:"RESTORE"`
+	Address          string `env:"ADDRESS"`
+	StoreInterval    time.Duration
+	StoreFile        string `env:"STORE_FILE"`
+	RestoreSavedData bool   `env:"RESTORE"`
 }
 
 func getFlag(cfg *Config) error {
@@ -32,8 +34,7 @@ func getFlag(cfg *Config) error {
 
 	flag.Parse()
 
-	StoreIntervalDuration := time.Duration(*StoreIntervalFlag) * time.Second
-	cfg.StoreInterval = StoreIntervalDuration
+	cfg.StoreInterval = time.Duration(*StoreIntervalFlag) * time.Second
 
 	return nil
 }
@@ -41,13 +42,24 @@ func getFlag(cfg *Config) error {
 func getEnv(cfg *Config) error {
 	err := env.Parse(cfg)
 	if err != nil {
-		log.Fatal(err)
+		log.Print(err)
 		return err
 	}
+
+	StoreIntervalEnv := os.Getenv("STORE_INTERVAL")
+	StoreIntervalEnvInt, err := strconv.Atoi(StoreIntervalEnv)
+	if err != nil {
+		return err
+	}
+
+	cfg.StoreInterval = time.Duration(StoreIntervalEnvInt) * time.Second
+
 	return nil
 }
 
 func Read() (Config, error) {
+	var err error
+
 	var cfg = Config{
 		Address:          SERVERADDRPORT,
 		StoreInterval:    STOREINTERVAL * time.Second,
@@ -55,8 +67,15 @@ func Read() (Config, error) {
 		RestoreSavedData: RESTORE,
 	}
 
-	getFlag(&cfg)
-	getEnv(&cfg)
+	err = getFlag(&cfg)
+	if err != nil {
+		return Config{}, err
+	}
+
+	err = getEnv(&cfg)
+	if err != nil {
+		return Config{}, err
+	}
 
 	return cfg, nil
 
