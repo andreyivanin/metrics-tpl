@@ -1,20 +1,52 @@
 package storage
 
-import "errors"
+import (
+	"context"
+	"errors"
+	"metrics-tpl/internal/server/config"
+)
 
 type Gauge float64
 type Counter int64
 
 type Metric interface{}
+type Metrics map[string]Metric
 
 type MemStorage struct {
-	Metrics map[string]Metric
+	Metrics  map[string]Metric
+	config   config.Config
+	syncMode bool
 }
 
-func New() *MemStorage {
+func New(cfg config.Config) (*MemStorage, error) {
 	return &MemStorage{
-		Metrics: make(map[string]Metric),
+		Metrics: make(Metrics),
+		config:  cfg,
+	}, nil
+}
+
+func (s *MemStorage) ApplyConfig() error {
+	if s.config.StoreFile != " " {
+		s.enableFileStore()
 	}
+
+	if s.config.RestoreSavedData {
+		s.Restore()
+	}
+
+	return nil
+}
+
+func (s *MemStorage) enableFileStore() {
+	if s.config.StoreInterval == 0 {
+		s.syncMode = true
+		return
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	go s.SaveTicker(ctx, s.config.StoreInterval)
 }
 
 func (s *MemStorage) UpdateMetric(name string, m Metric) (Metric, error) {
@@ -30,6 +62,10 @@ func (s *MemStorage) UpdateMetric(name string, m Metric) (Metric, error) {
 		}
 	default:
 		return nil, errors.New("the metric isn't found")
+	}
+
+	if s.syncMode {
+		s.Save()
 	}
 
 	return s.Metrics[name], nil
