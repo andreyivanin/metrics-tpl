@@ -23,16 +23,22 @@ func GzipHandle(next http.Handler) http.Handler {
 			return
 		}
 
-		contentInclude := [...]string{
-			"application/json",
+		compressContent := [...]string{
+			"applcation/json",
 			"text/html",
 		}
 
-		for _, ct := range contentInclude {
-			if r.Header.Get("Content-Type") == ct {
-				next.ServeHTTP(w, r)
-				return
+		var contentOK bool
+		for _, ctype := range compressContent {
+			if r.Header.Get("Content-Type") == ctype {
+				contentOK = true
+				break
 			}
+		}
+
+		if !contentOK {
+			next.ServeHTTP(w, r)
+			return
 		}
 
 		gz, err := gzip.NewWriterLevel(w, gzip.BestSpeed)
