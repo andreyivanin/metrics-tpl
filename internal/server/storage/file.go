@@ -3,7 +3,6 @@ package storage
 import (
 	"context"
 	"encoding/json"
-	"log"
 	"os"
 	"time"
 )
@@ -19,7 +18,7 @@ func (s *MemStorage) Save() error {
 
 	writer, err := NewWriter(s.config.StoreFile)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	defer writer.Close()
@@ -51,37 +50,34 @@ func (s *MemStorage) Save() error {
 
 }
 
-func (s *MemStorage) Restore() {
+func (s *MemStorage) Restore() error {
 	reader, err := NewReader(s.config.StoreFile)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
-	checkFile, err := os.Stat(s.config.StoreFile)
+	restoredMetrics, err := reader.ReadDatabase()
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
-	size := checkFile.Size()
+	s.Metrics = restoredMetrics
 
-	if size == 0 {
-		s.Save()
-	}
-
-	if restoredMetrics, err := reader.ReadDatabase(); err != nil {
-		log.Fatal(err)
-	} else {
-		s.Metrics = restoredMetrics
-	}
+	return nil
 }
 
-func (s *MemStorage) SaveTicker(ctx context.Context, storeint time.Duration) {
+func (s *MemStorage) SaveTicker(ctx context.Context, storeint time.Duration) error {
 	ticker := time.NewTicker(storeint)
 	defer ticker.Stop()
 
 	for range ticker.C {
-		s.Save()
+		err := s.Save()
+		if err != nil {
+			return err
+		}
 	}
+
+	return nil
 }
 
 type fileWriter struct {
