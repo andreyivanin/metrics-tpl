@@ -1,8 +1,8 @@
 package config
 
 import (
+	"errors"
 	"flag"
-	"log"
 	"os"
 	"strconv"
 	"time"
@@ -28,9 +28,10 @@ type Config struct {
 
 func getFlag(cfg *Config) error {
 	flag.StringVar(&cfg.Address, "a", cfg.Address, "server address and port")
-	StoreIntervalFlag := flag.Int("i", STOREINTERVAL, "server store interval")
 	flag.StringVar(&cfg.StoreFile, "f", cfg.StoreFile, "server db store file")
 	flag.BoolVar(&cfg.RestoreSavedData, "r", cfg.RestoreSavedData, "server restore db from file on start?")
+
+	StoreIntervalFlag := flag.Int("i", STOREINTERVAL, "server store interval")
 
 	flag.Parse()
 
@@ -42,21 +43,30 @@ func getFlag(cfg *Config) error {
 func getEnv(cfg *Config) error {
 	err := env.Parse(cfg)
 	if err != nil {
-		log.Print(err)
 		return err
 	}
 
-	StoreIntervalEnv, ok := os.LookupEnv("STORE_INTERVAL")
-	if !ok {
-		return nil
-	}
+	durationEnvs := [...]string{"STORE_INTERVAL"}
 
-	StoreIntervalEnvInt, err := strconv.Atoi(StoreIntervalEnv)
-	if err != nil {
-		return err
-	}
+	for _, env := range durationEnvs {
+		envString, ok := os.LookupEnv(env)
 
-	cfg.StoreInterval = time.Duration(StoreIntervalEnvInt) * time.Second
+		if ok {
+			envInt, err := strconv.Atoi(envString)
+			if err != nil {
+				return err
+			}
+
+			envDuration := time.Duration(envInt) * time.Second
+
+			switch env {
+			case "STORE_INTERVAL":
+				cfg.StoreInterval = envDuration
+			default:
+				return errors.New("unknown env variable")
+			}
+		}
+	}
 
 	return nil
 }

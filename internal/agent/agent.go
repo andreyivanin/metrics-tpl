@@ -31,8 +31,8 @@ type Monitor struct {
 func NewMonitor(cfg Config) Monitor {
 	return Monitor{
 		SrvAddr:      cfg.Address,
-		UpdateTicker: time.NewTicker(time.Duration(cfg.PollInterval) * time.Second),
-		SendTicker:   time.NewTicker(time.Duration(cfg.ReportInterval) * time.Second),
+		UpdateTicker: time.NewTicker(cfg.PollInterval),
+		SendTicker:   time.NewTicker(cfg.ReportInterval),
 		Metrics:      make(map[string]Metric, 29),
 	}
 }

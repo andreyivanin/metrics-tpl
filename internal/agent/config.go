@@ -1,8 +1,11 @@
 package agent
 
 import (
+	"errors"
 	"flag"
-	"log"
+	"os"
+	"strconv"
+	"time"
 
 	"github.com/caarlos0/env/v6"
 )
@@ -16,33 +19,77 @@ const (
 
 type Config struct {
 	Address        string `env:"ADDRESS"`
-	ReportInterval int    `env:"REPORT_INTERVAL"`
-	PollInterval   int    `env:"POLL_INTERVAL"`
+	ReportInterval time.Duration
+	PollInterval   time.Duration
 }
 
-func GetFlagConfig(cfg *Config) {
+func getFlag(cfg *Config) error {
 	flag.StringVar(&cfg.Address, "a", cfg.Address, "server address and port")
-	flag.IntVar(&cfg.ReportInterval, "r", cfg.ReportInterval, "agent report interval")
-	flag.IntVar(&cfg.PollInterval, "p", cfg.PollInterval, "agent poll interval")
+
+	ReportIntervalFlag := flag.Int("r", REPORTINTERVAL, "agent report interval")
+	PollIntervalFlag := flag.Int("p", POLLINTERVAL, "agent poll interval")
+
 	flag.Parse()
+
+	cfg.ReportInterval = time.Duration(*ReportIntervalFlag) * time.Second
+	cfg.PollInterval = time.Duration(*PollIntervalFlag) * time.Second
+
+	return nil
 }
 
-func GetEnvConfig(cfg *Config) {
+func getEnv(cfg *Config) error {
 	err := env.Parse(cfg)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
+
+	durationEnvs := [...]string{
+		"REPORT_INTERVAL",
+		"POLL_INTERVAL",
+	}
+
+	for _, env := range durationEnvs {
+		envString, ok := os.LookupEnv(env)
+
+		if ok {
+			envInt, err := strconv.Atoi(envString)
+			if err != nil {
+				return err
+			}
+
+			envDuration := time.Duration(envInt) * time.Second
+
+			switch env {
+			case "REPORT_INTERVAL":
+				cfg.ReportInterval = envDuration
+			case "POLL_INTERVAL":
+				cfg.PollInterval = envDuration
+			default:
+				return errors.New("unknown env variable")
+			}
+		}
+	}
+
+	return nil
 }
 
 func GetConfig() (Config, error) {
+	var err error
+
 	var cfg = Config{
 		Address:        SERVERADDRPORT,
-		PollInterval:   POLLINTERVAL,
-		ReportInterval: REPORTINTERVAL,
+		PollInterval:   POLLINTERVAL * time.Second,
+		ReportInterval: REPORTINTERVAL * time.Second,
 	}
 
-	GetFlagConfig(&cfg)
-	GetEnvConfig(&cfg)
+	err = getFlag(&cfg)
+	if err != nil {
+		return Config{}, err
+	}
 
+	err = getEnv(&cfg)
+	if err != nil {
+		return Config{}, err
+	}
 	return cfg, nil
 }
