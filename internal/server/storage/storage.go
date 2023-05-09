@@ -3,6 +3,8 @@ package storage
 import (
 	"context"
 	"errors"
+	"log"
+
 	"metrics-tpl/internal/server/config"
 )
 
@@ -31,7 +33,10 @@ func (s *MemStorage) ApplyConfig() error {
 	}
 
 	if s.config.RestoreSavedData {
-		s.Restore()
+		err := s.Restore()
+		if err != nil {
+			log.Print(err)
+		}
 	}
 
 	return nil

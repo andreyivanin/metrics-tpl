@@ -16,7 +16,7 @@ type Metrics struct {
 	Value *float64 `json:"value,omitempty"` // значение метрики в случае передачи gauge
 }
 
-func (h *Handler) MetricJSON(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) MetricUpdateJSON(w http.ResponseWriter, r *http.Request) {
 	b, err := io.ReadAll(r.Body)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -61,7 +61,7 @@ func (h *Handler) MetricJSON(w http.ResponseWriter, r *http.Request) {
 	w.Write(metricsJSON)
 }
 
-func (h *Handler) MetricSummaryJSON(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) MetricGetJSON(w http.ResponseWriter, r *http.Request) {
 	b, err := io.ReadAll(r.Body)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -99,7 +99,7 @@ func (h *Handler) MetricSummaryJSON(w http.ResponseWriter, r *http.Request) {
 	metricsJSON, err := json.Marshal(jsonmetric)
 
 	if err != nil {
-		log.Fatal(err)
+		log.Print(err)
 		return
 	}
 

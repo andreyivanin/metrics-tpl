@@ -54,13 +54,13 @@ func (m *Monitor) SendMetricsJSON() {
 
 		request, err := http.NewRequestWithContext(ctx, http.MethodPost, url, body)
 		if err != nil {
-			log.Fatalln(err)
+			log.Print(err)
 		}
 
 		request.Header.Set("Content-Type", "application/json")
 		response, err := client.Do(request)
 		if err != nil {
-			fmt.Println(err)
+			log.Print(err)
 		}
 
 		// requestDump, err := httputil.DumpRequest(request, true)

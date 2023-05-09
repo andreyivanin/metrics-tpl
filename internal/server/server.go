@@ -22,7 +22,7 @@ func NewRouter(storage *storage.MemStorage) (chi.Router, error) {
 	r.Use(middleware.GzipHandle)
 
 	r.Route("/update", func(r chi.Router) {
-		r.Post("/", customHandler.MetricJSON)
+		r.Post("/", customHandler.MetricUpdateJSON)
 		r.Route("/{mtype}/{mname}/{mvalue}", func(r chi.Router) {
 			r.Post("/", customHandler.MetricUpdate)
 			r.Get("/", customHandler.MetricUpdate)
@@ -30,7 +30,7 @@ func NewRouter(storage *storage.MemStorage) (chi.Router, error) {
 	})
 
 	r.Route("/value", func(r chi.Router) {
-		r.Post("/", customHandler.MetricSummaryJSON)
+		r.Post("/", customHandler.MetricGetJSON)
 		r.Route("/{mtype}/{mname}", func(r chi.Router) {
 			r.Get("/", customHandler.MetricGet)
 		})

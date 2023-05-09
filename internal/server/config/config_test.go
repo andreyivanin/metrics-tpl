@@ -58,7 +58,7 @@ func TestRead(t *testing.T) {
 			}
 
 			defer func() {
-				for env, _ := range tt.envs {
+				for env := range tt.envs {
 					os.Unsetenv(env)
 
 				}

@@ -84,14 +84,13 @@ func (m *Monitor) SendMetrics() {
 
 		request, err := http.NewRequestWithContext(ctx, http.MethodPost, url, nil)
 		if err != nil {
-			fmt.Println(err.Error())
-			os.Exit(1)
+			log.Println(err)
 		}
 
 		request.Header.Set("Content-Type", "text/plain")
 		response, err := client.Do(request)
 		if err != nil {
-			fmt.Println(err)
+			log.Println(err)
 		}
 
 		if response != nil {
