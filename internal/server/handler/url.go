@@ -44,7 +44,7 @@ func (h *Handler) MetricUpdate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.Storage.UpdateMetric(mname, metric)
+	h.Storage.UpdateMetric(mname, mtype, metric)
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("The metric " + mname + " was updated"))
 

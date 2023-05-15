@@ -49,20 +49,22 @@ func getEnv(cfg *Config) error {
 	for _, env := range durationEnvs {
 		envString, ok := os.LookupEnv(env)
 
-		if ok {
-			envInt, err := strconv.Atoi(envString)
-			if err != nil {
-				return err
-			}
+		if !ok {
+			continue
+		}
 
-			envDuration := time.Duration(envInt) * time.Second
+		envInt, err := strconv.Atoi(envString)
+		if err != nil {
+			return err
+		}
 
-			switch env {
-			case "STORE_INTERVAL":
-				cfg.StoreInterval = envDuration
-			default:
-				return errors.New("unknown env variable")
-			}
+		envDuration := time.Duration(envInt) * time.Second
+
+		switch env {
+		case "STORE_INTERVAL":
+			cfg.StoreInterval = envDuration
+		default:
+			return errors.New("unknown env variable")
 		}
 	}
 

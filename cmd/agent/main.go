@@ -1,10 +1,8 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"metrics-tpl/internal/agent"
-	"time"
 )
 
 func main() {
@@ -15,14 +13,8 @@ func main() {
 
 	monitor := agent.NewMonitor(cfg)
 
-	for {
-		select {
-		case <-monitor.UpdateTicker.C:
-			monitor.UpdateMetrics()
-			fmt.Println("Metrics update", " - ", time.Now())
-		case <-monitor.SendTicker.C:
-			monitor.SendMetricsJSON()
-			fmt.Println("Metrics send", " - ", time.Now())
-		}
+	err = monitor.Run()
+	if err != nil {
+		log.Fatal(err)
 	}
 }

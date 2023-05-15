@@ -9,6 +9,11 @@ import (
 	"metrics-tpl/internal/server/storage"
 )
 
+const (
+	_GAUGE   = "gauge"
+	_COUNTER = "counter"
+)
+
 type Metrics struct {
 	ID    string   `json:"id"`              // имя метрики
 	MType string   `json:"type"`            // параметр, принимающий значение gauge или counter
@@ -20,26 +25,28 @@ func (h *Handler) MetricUpdateJSON(w http.ResponseWriter, r *http.Request) {
 	b, err := io.ReadAll(r.Body)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 
 	jsonmetric := Metrics{}
 
 	if err := json.Unmarshal(b, &jsonmetric); err != nil {
-		log.Println(err)
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
 	}
 
 	var metric storage.Metric
 
 	switch jsonmetric.MType {
-	case "gauge":
+	case _GAUGE:
 		metric = storage.Gauge(*jsonmetric.Value)
-	case "counter":
+	case _COUNTER:
 		metric = storage.Counter(*jsonmetric.Delta)
 	}
 
-	updatedMetric, err := h.Storage.UpdateMetric(jsonmetric.ID, metric)
+	updatedMetric, err := h.Storage.UpdateMetric(jsonmetric.ID, jsonmetric.MType, metric)
 	if err != nil {
-		log.Println(err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -53,7 +60,8 @@ func (h *Handler) MetricUpdateJSON(w http.ResponseWriter, r *http.Request) {
 
 	metricsJSON, err := json.Marshal(jsonmetric)
 	if err != nil {
-		panic(err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -70,11 +78,11 @@ func (h *Handler) MetricGetJSON(w http.ResponseWriter, r *http.Request) {
 	jsonmetric := Metrics{}
 
 	if err := json.Unmarshal(b, &jsonmetric); err != nil {
-		log.Println(err)
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
 	}
 
 	metric, err := h.Storage.GetMetric(jsonmetric.ID)
-
 	if err != nil {
 		w.WriteHeader(http.StatusNotFound)
 		w.Write([]byte("One or several metrics weren't found"))
@@ -82,11 +90,11 @@ func (h *Handler) MetricGetJSON(w http.ResponseWriter, r *http.Request) {
 	}
 
 	switch jsonmetric.MType {
-	case "gauge":
+	case _GAUGE:
 		metric := metric.(storage.Gauge)
 		jsonmetric.Value = (*float64)(&metric)
 
-	case "counter":
+	case _COUNTER:
 		metric := metric.(storage.Counter)
 		jsonmetric.Delta = (*int64)(&metric)
 
@@ -97,9 +105,8 @@ func (h *Handler) MetricGetJSON(w http.ResponseWriter, r *http.Request) {
 	}
 
 	metricsJSON, err := json.Marshal(jsonmetric)
-
 	if err != nil {
-		log.Print(err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 

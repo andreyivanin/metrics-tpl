@@ -2,6 +2,7 @@ package agent
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -72,28 +73,32 @@ func (m *Monitor) UpdateMetrics() {
 	m.Metrics["PollCount"] = Counter(m.pollCounter)
 }
 
-func (m *Monitor) SendMetrics() {
+func (m *Monitor) SendMetrics() error {
 	client := http.Client{}
 
-	for name, value := range m.Metrics {
-		url := CreateURL(name, value, m.SrvAddr)
-		log.Println(url)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
 
-		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-		defer cancel()
+	err := func(ctx context.Context) error {
+		for name, value := range m.Metrics {
+			url := CreateURL(name, value, m.SrvAddr)
+			log.Println(url)
 
-		request, err := http.NewRequestWithContext(ctx, http.MethodPost, url, nil)
-		if err != nil {
-			log.Println(err)
-		}
+			request, err := http.NewRequestWithContext(ctx, http.MethodPost, url, nil)
+			if err != nil {
+				return err
+			}
 
-		request.Header.Set("Content-Type", "text/plain")
-		response, err := client.Do(request)
-		if err != nil {
-			log.Println(err)
-		}
+			request.Header.Set("Content-Type", "text/plain")
+			response, err := client.Do(request)
+			if err != nil {
+				return err
+			}
 
-		if response != nil {
+			if response == nil {
+				return errors.New("empty response")
+			}
+
 			fmt.Println("Status code", response.Status)
 
 			defer response.Body.Close()
@@ -103,6 +108,31 @@ func (m *Monitor) SendMetrics() {
 				os.Exit(1)
 			}
 			fmt.Println(string(body))
+		}
+
+		return nil
+	}(ctx)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (m *Monitor) Run() error {
+	for {
+		select {
+		case <-m.UpdateTicker.C:
+			m.UpdateMetrics()
+			fmt.Println("Metrics update", " - ", time.Now())
+		case <-m.SendTicker.C:
+			err := m.SendMetricsJSON()
+			if err != nil {
+				log.Print(err)
+			}
+
+			fmt.Println("Metrics send", " - ", time.Now())
 		}
 	}
 }

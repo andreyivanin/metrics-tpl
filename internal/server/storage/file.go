@@ -3,6 +3,7 @@ package storage
 import (
 	"context"
 	"encoding/json"
+	"log"
 	"os"
 	"time"
 )
@@ -30,23 +31,19 @@ func (s *MemStorage) Save() error {
 		case Gauge:
 			MetricsFile = append(MetricsFile, MetricFile{
 				ID:    name,
-				MType: "gauge",
+				MType: _GAUGE,
 				Value: (*float64)(&metric),
 			})
 		case Counter:
 			MetricsFile = append(MetricsFile, MetricFile{
 				ID:    name,
-				MType: "counter",
+				MType: _COUNTER,
 				Delta: (*int64)(&metric),
 			})
 		}
 	}
 
-	err = writer.encoder.Encode(MetricsFile)
-	if err != nil {
-		return err
-	}
-	return nil
+	return writer.encoder.Encode(MetricsFile)
 
 }
 
@@ -66,18 +63,21 @@ func (s *MemStorage) Restore() error {
 	return nil
 }
 
-func (s *MemStorage) SaveTicker(ctx context.Context, storeint time.Duration) error {
+func (s *MemStorage) SaveTicker(ctx context.Context, storeint time.Duration) {
 	ticker := time.NewTicker(storeint)
-	defer ticker.Stop()
 
-	for range ticker.C {
-		err := s.Save()
-		if err != nil {
-			return err
+	for {
+		select {
+		case <-ticker.C:
+			err := s.Save()
+			if err != nil {
+				log.Fatal(err)
+				return
+			}
+		case <-ctx.Done():
+			return
 		}
 	}
-
-	return nil
 }
 
 type fileWriter struct {

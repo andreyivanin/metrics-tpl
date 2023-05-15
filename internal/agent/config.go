@@ -11,10 +11,10 @@ import (
 )
 
 const (
-	PROTOCOL       = "http"
-	SERVERADDRPORT = "localhost:8080"
-	POLLINTERVAL   = 2
-	REPORTINTERVAL = 10
+	_PROTOCOL       = "http"
+	_SERVERADDRPORT = "localhost:8080"
+	_POLLINTERVAL   = 2
+	_REPORTINTERVAL = 10
 )
 
 type Config struct {
@@ -26,8 +26,8 @@ type Config struct {
 func getFlag(cfg *Config) error {
 	flag.StringVar(&cfg.Address, "a", cfg.Address, "server address and port")
 
-	ReportIntervalFlag := flag.Int("r", REPORTINTERVAL, "agent report interval")
-	PollIntervalFlag := flag.Int("p", POLLINTERVAL, "agent poll interval")
+	ReportIntervalFlag := flag.Int("r", _REPORTINTERVAL, "agent report interval")
+	PollIntervalFlag := flag.Int("p", _POLLINTERVAL, "agent poll interval")
 
 	flag.Parse()
 
@@ -51,22 +51,24 @@ func getEnv(cfg *Config) error {
 	for _, env := range durationEnvs {
 		envString, ok := os.LookupEnv(env)
 
-		if ok {
-			envInt, err := strconv.Atoi(envString)
-			if err != nil {
-				return err
-			}
+		if !ok {
+			continue
+		}
 
-			envDuration := time.Duration(envInt) * time.Second
+		envInt, err := strconv.Atoi(envString)
+		if err != nil {
+			return err
+		}
 
-			switch env {
-			case "REPORT_INTERVAL":
-				cfg.ReportInterval = envDuration
-			case "POLL_INTERVAL":
-				cfg.PollInterval = envDuration
-			default:
-				return errors.New("unknown env variable")
-			}
+		envDuration := time.Duration(envInt) * time.Second
+
+		switch env {
+		case "REPORT_INTERVAL":
+			cfg.ReportInterval = envDuration
+		case "POLL_INTERVAL":
+			cfg.PollInterval = envDuration
+		default:
+			return errors.New("unknown env variable")
 		}
 	}
 
@@ -77,9 +79,9 @@ func GetConfig() (Config, error) {
 	var err error
 
 	var cfg = Config{
-		Address:        SERVERADDRPORT,
-		PollInterval:   POLLINTERVAL * time.Second,
-		ReportInterval: REPORTINTERVAL * time.Second,
+		Address:        _SERVERADDRPORT,
+		PollInterval:   _POLLINTERVAL * time.Second,
+		ReportInterval: _REPORTINTERVAL * time.Second,
 	}
 
 	err = getFlag(&cfg)

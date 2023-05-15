@@ -9,7 +9,7 @@ import (
 	"metrics-tpl/internal/server/storage"
 )
 
-func NewRouter(storage *storage.MemStorage) (chi.Router, error) {
+func NewRouter(storage *storage.MemStorage) chi.Router {
 	customHandler := handler.NewHandler(storage)
 
 	r := chi.NewRouter()
@@ -40,5 +40,5 @@ func NewRouter(storage *storage.MemStorage) (chi.Router, error) {
 		r.Get("/", customHandler.MetricSummary)
 	})
 
-	return r, nil
+	return r
 }
