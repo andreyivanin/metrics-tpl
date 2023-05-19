@@ -29,7 +29,7 @@ type MemStorage struct {
 	syncMode bool
 }
 
-func New(cfg config.Config) (*MemStorage, error) {
+func New(ctx context.Context, cfg config.Config) (*MemStorage, error) {
 	memStorage := &MemStorage{
 		Metrics: make(Metrics),
 		Mu:      new(sync.Mutex),
@@ -37,7 +37,7 @@ func New(cfg config.Config) (*MemStorage, error) {
 	}
 
 	if memStorage.config.StoreFile != " " {
-		memStorage.enableFileStore()
+		memStorage.enableFileStore(ctx)
 	}
 
 	if memStorage.config.RestoreSavedData {
@@ -51,14 +51,11 @@ func New(cfg config.Config) (*MemStorage, error) {
 
 }
 
-func (s *MemStorage) enableFileStore() {
+func (s *MemStorage) enableFileStore(ctx context.Context) {
 	if s.config.StoreInterval == 0 {
 		s.syncMode = true
 		return
 	}
-
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
 
 	go s.SaveTicker(ctx, s.config.StoreInterval)
 }

@@ -2,6 +2,7 @@ package handler
 
 import (
 	"bytes"
+	"context"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -56,7 +57,10 @@ func TestHandler_MetricUpdateJSON(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			storage, _ := storage.New(config.Config{})
+			ctx, cancel := context.WithCancel(context.Background())
+			defer cancel()
+
+			storage, _ := storage.New(ctx, config.Config{})
 
 			rBody := bytes.NewReader([]byte(tt.req.body))
 

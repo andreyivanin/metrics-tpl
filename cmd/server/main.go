@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"log"
 	"metrics-tpl/internal/server"
 	"metrics-tpl/internal/server/config"
@@ -9,12 +10,15 @@ import (
 )
 
 func main() {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
 	config, err := config.Read()
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	storage, err := storage.New(config)
+	storage, err := storage.New(ctx, config)
 	if err != nil {
 		log.Fatal(err)
 	}

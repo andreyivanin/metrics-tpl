@@ -74,8 +74,8 @@ func (s *MemStorage) SaveTicker(ctx context.Context, storeint time.Duration) {
 				log.Fatal(err)
 				return
 			}
-		case <-ctx.Done():
-			return
+			// case <-ctx.Done():
+			// 	return
 		}
 	}
 }

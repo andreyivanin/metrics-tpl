@@ -15,6 +15,9 @@ const (
 	_SERVERADDRPORT = "localhost:8080"
 	_POLLINTERVAL   = 2 * time.Second
 	_REPORTINTERVAL = 10 * time.Second
+
+	_POLLINTERVALENV   = "POLL_INTERVAL"
+	_REPORTINTERVALENV = "REPORT_INTERVAL"
 )
 
 var (
@@ -28,21 +31,7 @@ type Config struct {
 	PollInterval   time.Duration
 }
 
-func getFlag(cfg *Config) error {
-	flag.StringVar(&cfg.Address, "a", _SERVERADDRPORT, "server address and port")
-	flag.DurationVar(&cfg.ReportInterval, "r", _REPORTINTERVAL, "agent report interval")
-	flag.DurationVar(&cfg.PollInterval, "p", _POLLINTERVAL, "agent poll interval")
-
-	flag.Parse()
-
-	return nil
-}
-
-func parseDuration(key string) (time.Duration, error) {
-	value, ok := os.LookupEnv(key)
-	if !ok {
-		return 0, ErrParseDucation
-	}
+func parseDuration(value string) (time.Duration, error) {
 	duration, err := time.ParseDuration(value)
 
 	if err != nil {
@@ -56,32 +45,61 @@ func parseDuration(key string) (time.Duration, error) {
 	return duration, nil
 }
 
+func parseDurationENV(p *time.Duration, envkey string) error {
+	value, ok := os.LookupEnv(envkey)
+	if !ok {
+		return nil
+	}
+
+	valueDur, err := parseDuration(value)
+	if err != nil {
+		return err
+	}
+
+	*p = valueDur
+
+	return nil
+
+}
+
+func getFlag(cfg *Config) error {
+	flag.StringVar(&cfg.Address, "a", _SERVERADDRPORT, "server address and port")
+
+	flag.Func("r", "agent report interval", func(flagValue string) error {
+		valueDur, err := parseDuration(flagValue)
+		if err != nil {
+			return err
+		}
+		cfg.ReportInterval = valueDur
+		return nil
+	})
+
+	flag.Func("p", "agent poll interval", func(flagValue string) error {
+		valueDur, err := parseDuration(flagValue)
+		if err != nil {
+			return err
+		}
+		cfg.PollInterval = valueDur
+		return nil
+	})
+
+	flag.Parse()
+
+	return nil
+}
+
 func getEnv(cfg *Config) error {
 	err := env.Parse(cfg)
 	if err != nil {
 		return err
 	}
 
-	durationEnvs := [...]string{
-		"REPORT_INTERVAL",
-		"POLL_INTERVAL",
+	if err = parseDurationENV(&cfg.PollInterval, _POLLINTERVALENV); err != nil {
+		return err
 	}
 
-	for _, env := range durationEnvs {
-
-		envDuration, err := parseDuration(env)
-		if err != nil {
-			return err
-		}
-
-		switch env {
-		case "REPORT_INTERVAL":
-			cfg.ReportInterval = envDuration
-		case "POLL_INTERVAL":
-			cfg.PollInterval = envDuration
-		default:
-			return errors.New("unknown env variable")
-		}
+	if err = parseDurationENV(&cfg.ReportInterval, _REPORTINTERVALENV); err != nil {
+		return err
 	}
 
 	return nil

@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"context"
 	"io"
 
 	"net/http"
@@ -113,7 +114,10 @@ func TestHandler_MetricUpdate(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			storage, _ := storage.New(config.Config{})
+			ctx, cancel := context.WithCancel(context.Background())
+			defer cancel()
+
+			storage, _ := storage.New(ctx, config.Config{})
 			router, _ := NewRouter(storage)
 			ts := httptest.NewServer(router)
 			defer ts.Close()
