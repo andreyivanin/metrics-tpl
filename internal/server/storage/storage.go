@@ -94,7 +94,7 @@ func (s *MemStorage) GetMetric(mname string) (Metric, error) {
 	return nil, ErrNotFound
 }
 
-func (s *MemStorage) GetAllMetrics() map[string]Metric {
+func (s *MemStorage) GetAllMetrics() Metrics {
 	return s.Metrics
 
 }

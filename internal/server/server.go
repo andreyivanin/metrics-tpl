@@ -9,7 +9,13 @@ import (
 	"metrics-tpl/internal/server/storage"
 )
 
-func NewRouter(storage *storage.MemStorage) chi.Router {
+type Repository interface {
+	UpdateMetric(name, mtype string, m storage.Metric) (storage.Metric, error)
+	GetMetric(mname string) (storage.Metric, error)
+	GetAllMetrics() storage.Metrics
+}
+
+func NewRouter(storage Repository) chi.Router {
 	customHandler := handler.NewHandler(storage)
 
 	r := chi.NewRouter()
