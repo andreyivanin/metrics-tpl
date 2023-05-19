@@ -13,8 +13,13 @@ import (
 const (
 	_PROTOCOL       = "http"
 	_SERVERADDRPORT = "localhost:8080"
-	_POLLINTERVAL   = 2
-	_REPORTINTERVAL = 10
+	_POLLINTERVAL   = 2 * time.Second
+	_REPORTINTERVAL = 10 * time.Second
+)
+
+var (
+	ErrParseDucation = errors.New("failed to parse duration")
+	ErrUnknownEnvVar = errors.New("unknown env variable")
 )
 
 type Config struct {
@@ -24,17 +29,31 @@ type Config struct {
 }
 
 func getFlag(cfg *Config) error {
-	flag.StringVar(&cfg.Address, "a", cfg.Address, "server address and port")
-
-	ReportIntervalFlag := flag.Int("r", _REPORTINTERVAL, "agent report interval")
-	PollIntervalFlag := flag.Int("p", _POLLINTERVAL, "agent poll interval")
+	flag.StringVar(&cfg.Address, "a", _SERVERADDRPORT, "server address and port")
+	flag.DurationVar(&cfg.ReportInterval, "r", _REPORTINTERVAL, "agent report interval")
+	flag.DurationVar(&cfg.PollInterval, "p", _POLLINTERVAL, "agent poll interval")
 
 	flag.Parse()
 
-	cfg.ReportInterval = time.Duration(*ReportIntervalFlag) * time.Second
-	cfg.PollInterval = time.Duration(*PollIntervalFlag) * time.Second
-
 	return nil
+}
+
+func parseDuration(key string) (time.Duration, error) {
+	value, ok := os.LookupEnv(key)
+	if !ok {
+		return 0, ErrParseDucation
+	}
+	duration, err := time.ParseDuration(value)
+
+	if err != nil {
+		if value, err := strconv.Atoi(value); err == nil {
+			return time.Duration(value) * time.Second, nil
+		}
+
+		return 0, ErrParseDucation
+	}
+
+	return duration, nil
 }
 
 func getEnv(cfg *Config) error {
@@ -49,18 +68,11 @@ func getEnv(cfg *Config) error {
 	}
 
 	for _, env := range durationEnvs {
-		envString, ok := os.LookupEnv(env)
 
-		if !ok {
-			continue
-		}
-
-		envInt, err := strconv.Atoi(envString)
+		envDuration, err := parseDuration(env)
 		if err != nil {
 			return err
 		}
-
-		envDuration := time.Duration(envInt) * time.Second
 
 		switch env {
 		case "REPORT_INTERVAL":
@@ -80,8 +92,8 @@ func GetConfig() (Config, error) {
 
 	var cfg = Config{
 		Address:        _SERVERADDRPORT,
-		PollInterval:   _POLLINTERVAL * time.Second,
-		ReportInterval: _REPORTINTERVAL * time.Second,
+		PollInterval:   _POLLINTERVAL,
+		ReportInterval: _REPORTINTERVAL,
 	}
 
 	err = getFlag(&cfg)

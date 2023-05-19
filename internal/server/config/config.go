@@ -3,18 +3,24 @@ package config
 import (
 	"errors"
 	"flag"
+	"fmt"
 	"os"
 	"strconv"
 	"time"
 
-	"github.com/caarlos0/env/v6"
+	"github.com/caarlos0/env/v8"
 )
 
 const (
-	SERVERADDRPORT = "localhost:8080"
-	STOREINTERVAL  = 300
-	STOREFILE      = "metrics-db.json"
-	RESTORE        = true
+	_SERVERADDRPORT = "localhost:8080"
+	_STOREINTERVAL  = 300 * time.Second
+	_STOREFILE      = "metrics-db.json"
+	_RESTORE        = true
+)
+
+var (
+	ErrParseDucation = errors.New("failed to parse duration")
+	ErrUnknownEnvVar = errors.New("unknown env variable")
 )
 
 type Config struct {
@@ -25,20 +31,88 @@ type Config struct {
 }
 
 func getFlag(cfg *Config) error {
-	flag.StringVar(&cfg.Address, "a", cfg.Address, "server address and port")
-	flag.StringVar(&cfg.StoreFile, "f", cfg.StoreFile, "server db store file")
+	flag.StringVar(&cfg.Address, "a", _SERVERADDRPORT, "server address and port")
+	flag.StringVar(&cfg.StoreFile, "f", _STOREFILE, "server db store file")
 	flag.BoolVar(&cfg.RestoreSavedData, "r", cfg.RestoreSavedData, "server restore db from file on start?")
+	// flag.DurationVar(&cfg.StoreInterval, "i", _STOREINTERVAL, "server store interval")
+	flag.Func("i", "server store interval", func(flagValue string) error {
 
-	StoreIntervalFlag := flag.Int("i", STOREINTERVAL, "server store interval")
+		if len(flagValue) > 0 {
+			if _, err := strconv.Atoi(flagValue); err == nil {
+				flagValue += "s"
+			}
+		}
+
+		d, err := time.ParseDuration(flagValue)
+		if err != nil {
+			return errors.New("failed to parse duration")
+		}
+
+		cfg.StoreInterval = d
+
+		return nil
+
+		// if err != nil {
+		// 	if value, err := strconv.Atoi(flagValue); err == nil {
+		// 		return time.Duration(flagValue) * time.Second, nil
+		// 	}
+
+		// 	return 0, ErrParseDucation
+		// }
+
+	})
 
 	flag.Parse()
-
-	cfg.StoreInterval = time.Duration(*StoreIntervalFlag) * time.Second
 
 	return nil
 }
 
+func parseDuration(key string) (time.Duration, error) {
+	value, ok := os.LookupEnv(key)
+	if !ok {
+		return 0, ErrParseDucation
+	}
+	duration, err := time.ParseDuration(value)
+
+	if err != nil {
+		if value, err := strconv.Atoi(value); err == nil {
+			return time.Duration(value) * time.Second, nil
+		}
+
+		return 0, ErrParseDucation
+	}
+
+	return duration, nil
+}
+
 func getEnv(cfg *Config) error {
+
+	// parseDuration := func(v string) (interface{}, error) {
+	// 	if len(v) > 0 {
+	// 		if _, err := strconv.Atoi(v); err == nil {
+	// 			v += "s"
+	// 		}
+	// 	}
+
+	// 	d, err := time.ParseDuration(v)
+	// 	if err != nil {
+	// 		return nil, errors.New("failed to parse duration")
+	// 	}
+
+	// 	return d, nil
+	// }
+
+	// opt := env.Options{
+	// 	FuncMap: map[reflect.Type]env.ParserFunc{
+	// 		reflect.TypeOf(cfg.StoreInterval): parseDuration,
+	// 	},
+	// }
+
+	// err := env.ParseWithOptions(cfg, opt)
+	// if err != nil {
+	// 	return err
+	// }
+
 	err := env.Parse(cfg)
 	if err != nil {
 		return err
@@ -47,24 +121,17 @@ func getEnv(cfg *Config) error {
 	durationEnvs := [...]string{"STORE_INTERVAL"}
 
 	for _, env := range durationEnvs {
-		envString, ok := os.LookupEnv(env)
 
-		if !ok {
-			continue
-		}
-
-		envInt, err := strconv.Atoi(envString)
+		envDuration, err := parseDuration(env)
 		if err != nil {
 			return err
 		}
-
-		envDuration := time.Duration(envInt) * time.Second
 
 		switch env {
 		case "STORE_INTERVAL":
 			cfg.StoreInterval = envDuration
 		default:
-			return errors.New("unknown env variable")
+			return ErrUnknownEnvVar
 		}
 	}
 
@@ -72,13 +139,17 @@ func getEnv(cfg *Config) error {
 }
 
 func Read() (Config, error) {
+	for i, v := range os.Args[1:] {
+		fmt.Println(i+1, v)
+	}
+
 	var err error
 
 	var cfg = Config{
-		Address:          SERVERADDRPORT,
-		StoreInterval:    STOREINTERVAL * time.Second,
-		StoreFile:        STOREFILE,
-		RestoreSavedData: RESTORE,
+		Address:          _SERVERADDRPORT,
+		StoreInterval:    _STOREINTERVAL,
+		StoreFile:        _STOREFILE,
+		RestoreSavedData: _RESTORE,
 	}
 
 	err = getFlag(&cfg)
