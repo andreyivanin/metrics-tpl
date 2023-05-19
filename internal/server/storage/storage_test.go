@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -17,7 +18,7 @@ func Test_UpdateMetric(t *testing.T) {
 	tests := []struct {
 		name   string
 		metric fields
-		want   MemStorage
+		want   Metrics
 	}{
 		{
 			name: "update gauge metric",
@@ -26,9 +27,7 @@ func Test_UpdateMetric(t *testing.T) {
 				mtype:  _GAUGE,
 				metric: Gauge(1223113),
 			},
-			want: MemStorage{
-				Metrics: Metrics{"Alloc": Gauge(1223113)},
-			},
+			want: Metrics{"Alloc": Gauge(1223113)},
 		},
 		{
 			name: "update counter metric",
@@ -37,9 +36,7 @@ func Test_UpdateMetric(t *testing.T) {
 				mtype:  _COUNTER,
 				metric: Counter(67),
 			},
-			want: MemStorage{
-				Metrics: Metrics{"RandomValue": Counter(134)},
-			},
+			want: Metrics{"RandomValue": Counter(134)},
 		},
 	}
 
@@ -47,10 +44,11 @@ func Test_UpdateMetric(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			var DB = MemStorage{
 				Metrics: make(Metrics),
+				Mu:      new(sync.Mutex),
 			}
 			DB.UpdateMetric(tt.metric.name, tt.metric.mtype, tt.metric.metric)
 			DB.UpdateMetric(tt.metric.name, tt.metric.mtype, tt.metric.metric)
-			assert.Equal(t, tt.want, DB)
+			assert.Equal(t, tt.want, DB.Metrics)
 		})
 	}
 }

@@ -23,7 +23,7 @@ type Metric interface{}
 type Metrics map[string]Metric
 
 type MemStorage struct {
-	Metrics  map[string]Metric
+	Metrics  Metrics
 	Mu       *sync.Mutex
 	config   config.Config
 	syncMode bool
