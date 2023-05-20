@@ -29,6 +29,7 @@ type Config struct {
 	StoreInterval    time.Duration
 	StoreFile        string `env:"STORE_FILE"`
 	RestoreSavedData bool   `env:"RESTORE"`
+	DatabaseDSN      string `env:"DATABASE_DSN"`
 }
 
 func parseDuration(value string) (time.Duration, error) {
@@ -74,6 +75,7 @@ func getFlag(cfg *Config) error {
 		cfg.StoreInterval = valueDur
 		return nil
 	})
+	flag.StringVar(&cfg.DatabaseDSN, "d", "", "database connection string")
 
 	flag.Parse()
 

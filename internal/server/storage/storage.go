@@ -98,3 +98,7 @@ func (s *MemStorage) GetAllMetrics() Metrics {
 	return s.Metrics
 
 }
+
+func (s *MemStorage) GetConfig() config.Config {
+	return s.config
+}

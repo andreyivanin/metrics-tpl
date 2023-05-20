@@ -4,6 +4,7 @@ import (
 	"github.com/go-chi/chi"
 	chiMiddleware "github.com/go-chi/chi/middleware"
 
+	"metrics-tpl/internal/server/config"
 	"metrics-tpl/internal/server/handler"
 	"metrics-tpl/internal/server/middleware"
 	"metrics-tpl/internal/server/storage"
@@ -13,6 +14,7 @@ type Repository interface {
 	UpdateMetric(name, mtype string, m storage.Metric) (storage.Metric, error)
 	GetMetric(mname string) (storage.Metric, error)
 	GetAllMetrics() storage.Metrics
+	GetConfig() config.Config
 }
 
 func NewRouter(storage Repository) chi.Router {
@@ -44,6 +46,10 @@ func NewRouter(storage Repository) chi.Router {
 
 	r.Route("/", func(r chi.Router) {
 		r.Get("/", customHandler.MetricSummary)
+	})
+
+	r.Route("/ping", func(r chi.Router) {
+		r.Get("/", customHandler.TestDBConnection)
 	})
 
 	return r
