@@ -25,6 +25,8 @@ func main() {
 
 	router := server.NewRouter(storage)
 
+	log.Printf("Running http server on port: %s", config.Address)
+
 	err = http.ListenAndServe(config.Address, router)
 	if err != nil {
 		log.Fatal(err)

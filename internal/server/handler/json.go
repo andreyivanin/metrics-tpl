@@ -1,12 +1,13 @@
 package handler
 
 import (
+	"context"
 	"encoding/json"
 	"io"
 	"log"
 	"net/http"
 
-	"metrics-tpl/internal/server/storage"
+	"metrics-tpl/internal/server/models"
 )
 
 const (
@@ -22,6 +23,9 @@ type Metrics struct {
 }
 
 func (h *Handler) MetricUpdateJSON(w http.ResponseWriter, r *http.Request) {
+	ctx, cancel := context.WithTimeout(context.Background(), timeoutCTX)
+	defer cancel()
+
 	b, err := io.ReadAll(r.Body)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -35,26 +39,26 @@ func (h *Handler) MetricUpdateJSON(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var metric storage.Metric
+	var metric models.Metric
 
 	switch jsonmetric.MType {
 	case _GAUGE:
-		metric = storage.Gauge(*jsonmetric.Value)
+		metric = models.Gauge(*jsonmetric.Value)
 	case _COUNTER:
-		metric = storage.Counter(*jsonmetric.Delta)
+		metric = models.Counter(*jsonmetric.Delta)
 	}
 
-	updatedMetric, err := h.Storage.UpdateMetric(jsonmetric.ID, jsonmetric.MType, metric)
+	updatedMetric, err := h.Storage.UpdateMetric(ctx, jsonmetric.ID, jsonmetric.MType, metric)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	switch updatedMetric := updatedMetric.(type) {
-	case storage.Gauge:
+	case models.Gauge:
 		jsonmetric.Value = (*float64)(&updatedMetric)
 
-	case storage.Counter:
+	case models.Counter:
 		jsonmetric.Delta = (*int64)(&updatedMetric)
 	}
 
@@ -70,6 +74,9 @@ func (h *Handler) MetricUpdateJSON(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) MetricGetJSON(w http.ResponseWriter, r *http.Request) {
+	ctx, cancel := context.WithTimeout(context.Background(), timeoutCTX)
+	defer cancel()
+
 	b, err := io.ReadAll(r.Body)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -82,7 +89,7 @@ func (h *Handler) MetricGetJSON(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	metric, err := h.Storage.GetMetric(jsonmetric.ID)
+	metric, err := h.Storage.GetMetric(ctx, jsonmetric.ID)
 	if err != nil {
 		w.WriteHeader(http.StatusNotFound)
 		w.Write([]byte("One or several metrics weren't found"))
@@ -91,11 +98,11 @@ func (h *Handler) MetricGetJSON(w http.ResponseWriter, r *http.Request) {
 
 	switch jsonmetric.MType {
 	case _GAUGE:
-		metric := metric.(storage.Gauge)
+		metric := metric.(models.Gauge)
 		jsonmetric.Value = (*float64)(&metric)
 
 	case _COUNTER:
-		metric := metric.(storage.Counter)
+		metric := metric.(models.Counter)
 		jsonmetric.Delta = (*int64)(&metric)
 
 	default:

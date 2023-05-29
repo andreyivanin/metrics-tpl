@@ -6,6 +6,8 @@ import (
 	"log"
 	"os"
 	"time"
+
+	"metrics-tpl/internal/server/models"
 )
 
 type MetricFile struct {
@@ -28,13 +30,13 @@ func (s *MemStorage) Save() error {
 
 	for name, metric := range s.Metrics {
 		switch metric := metric.(type) {
-		case Gauge:
+		case models.Gauge:
 			MetricsFile = append(MetricsFile, MetricFile{
 				ID:    name,
 				MType: _GAUGE,
 				Value: (*float64)(&metric),
 			})
-		case Counter:
+		case models.Counter:
 			MetricsFile = append(MetricsFile, MetricFile{
 				ID:    name,
 				MType: _COUNTER,
@@ -107,7 +109,7 @@ type fileReader struct {
 }
 
 func NewReader(filename string) (*fileReader, error) {
-	file, err := os.OpenFile(filename, os.O_RDONLY|os.O_CREATE, 0777)
+	file, err := os.OpenFile(filename, os.O_RDONLY|os.O_CREATE, 0755)
 	if err != nil {
 		return nil, err
 	}
@@ -118,21 +120,21 @@ func NewReader(filename string) (*fileReader, error) {
 	}, nil
 }
 
-func (r *fileReader) ReadDatabase() (Metrics, error) {
+func (r *fileReader) ReadDatabase() (models.Metrics, error) {
 	MetricsFile := []MetricFile{}
 
 	if err := r.reader.Decode(&MetricsFile); err != nil {
 		return nil, err
 	}
 
-	Metrics := Metrics{}
+	Metrics := models.Metrics{}
 
 	for _, metric := range MetricsFile {
 		switch metric.MType {
 		case "gauge":
-			Metrics[metric.ID] = Gauge(*metric.Value)
+			Metrics[metric.ID] = models.Gauge(*metric.Value)
 		case "counter":
-			Metrics[metric.ID] = Counter(*metric.Delta)
+			Metrics[metric.ID] = models.Counter(*metric.Delta)
 		}
 	}
 	return Metrics, nil

@@ -1,23 +1,25 @@
 package server
 
 import (
+	"context"
+
 	"github.com/go-chi/chi"
 	chiMiddleware "github.com/go-chi/chi/middleware"
 
 	"metrics-tpl/internal/server/config"
 	"metrics-tpl/internal/server/handler"
 	"metrics-tpl/internal/server/middleware"
-	"metrics-tpl/internal/server/storage"
+	"metrics-tpl/internal/server/models"
 )
 
-type Repository interface {
-	UpdateMetric(name, mtype string, m storage.Metric) (storage.Metric, error)
-	GetMetric(mname string) (storage.Metric, error)
-	GetAllMetrics() storage.Metrics
+type Storage interface {
+	UpdateMetric(ctx context.Context, name, mtype string, m models.Metric) (models.Metric, error)
+	GetMetric(ctx context.Context, mname string) (models.Metric, error)
+	GetAllMetrics(ctx context.Context) (models.Metrics, error)
 	GetConfig() config.Config
 }
 
-func NewRouter(storage Repository) chi.Router {
+func NewRouter(storage Storage) chi.Router {
 	customHandler := handler.NewHandler(storage)
 
 	r := chi.NewRouter()

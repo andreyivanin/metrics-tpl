@@ -1,21 +1,25 @@
 package handler
 
 import (
+	"context"
 	"metrics-tpl/internal/server/config"
-	"metrics-tpl/internal/server/storage"
+	"metrics-tpl/internal/server/models"
+	"time"
 )
 
-type Repository interface {
-	UpdateMetric(name, mtype string, m storage.Metric) (storage.Metric, error)
-	GetMetric(mname string) (storage.Metric, error)
-	GetAllMetrics() storage.Metrics
+const timeoutCTX = 3 * time.Second
+
+type Storage interface {
+	UpdateMetric(ctx context.Context, name, mtype string, m models.Metric) (models.Metric, error)
+	GetMetric(ctx context.Context, mname string) (models.Metric, error)
+	GetAllMetrics(ctx context.Context) (models.Metrics, error)
 	GetConfig() config.Config
 }
 
 type Handler struct {
-	Storage Repository
+	Storage Storage
 }
 
-func NewHandler(storage Repository) *Handler {
+func NewHandler(storage Storage) *Handler {
 	return &Handler{storage}
 }

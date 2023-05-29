@@ -18,7 +18,7 @@ import (
 	"metrics-tpl/internal/server/storage"
 )
 
-func NewRouter(storage *storage.MemStorage) (chi.Router, error) {
+func NewRouter(storage Storage) chi.Router {
 	customHandler := NewHandler(storage)
 
 	r := chi.NewRouter()
@@ -49,7 +49,7 @@ func NewRouter(storage *storage.MemStorage) (chi.Router, error) {
 		r.Get("/", customHandler.MetricSummary)
 	})
 
-	return r, nil
+	return r
 }
 
 func testRequestURL(t *testing.T, ts *httptest.Server, method, path string) (int, string) {
@@ -118,7 +118,7 @@ func TestHandler_MetricUpdate(t *testing.T) {
 			defer cancel()
 
 			storage, _ := storage.New(ctx, config.Config{})
-			router, _ := NewRouter(storage)
+			router := NewRouter(storage)
 			ts := httptest.NewServer(router)
 			defer ts.Close()
 

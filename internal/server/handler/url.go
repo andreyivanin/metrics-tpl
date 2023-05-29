@@ -1,17 +1,21 @@
 package handler
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"strconv"
 
 	"github.com/go-chi/chi"
 
-	"metrics-tpl/internal/server/storage"
+	"metrics-tpl/internal/server/models"
 )
 
 func (h *Handler) MetricUpdate(w http.ResponseWriter, r *http.Request) {
-	var metric storage.Metric
+	ctx, cancel := context.WithTimeout(context.Background(), timeoutCTX)
+	defer cancel()
+
+	var metric models.Metric
 
 	mtype := chi.URLParam(r, "mtype")
 	mname := chi.URLParam(r, "mname")
@@ -27,7 +31,7 @@ func (h *Handler) MetricUpdate(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		metric = storage.Gauge(mvalueconv)
+		metric = models.Gauge(mvalueconv)
 
 	case "counter":
 		mvalueconv, err := strconv.ParseInt(mvalue, 10, 64)
@@ -36,7 +40,7 @@ func (h *Handler) MetricUpdate(w http.ResponseWriter, r *http.Request) {
 			w.Write([]byte("Bad metric value"))
 			return
 		}
-		metric = storage.Counter(mvalueconv)
+		metric = models.Counter(mvalueconv)
 
 	default:
 		w.WriteHeader(http.StatusBadRequest)
@@ -44,18 +48,21 @@ func (h *Handler) MetricUpdate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.Storage.UpdateMetric(mname, mtype, metric)
+	h.Storage.UpdateMetric(ctx, mname, mtype, metric)
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("The metric " + mname + " was updated"))
 
 }
 
 func (h *Handler) MetricGet(w http.ResponseWriter, r *http.Request) {
+	ctx, cancel := context.WithTimeout(context.Background(), timeoutCTX)
+	defer cancel()
+
 	mtype := chi.URLParam(r, "mtype")
 	mname := chi.URLParam(r, "mname")
 	w.Header().Set("Content-Type", "text/html")
 
-	metric, err := h.Storage.GetMetric(mname)
+	metric, err := h.Storage.GetMetric(ctx, mname)
 	if err != nil {
 		w.WriteHeader(http.StatusNotFound)
 		w.Write([]byte("The metric isn't found"))
@@ -65,14 +72,14 @@ func (h *Handler) MetricGet(w http.ResponseWriter, r *http.Request) {
 
 	switch mtype {
 	case "gauge":
-		if metric, ok := metric.(storage.Gauge); ok {
+		if metric, ok := metric.(models.Gauge); ok {
 			metricconv := fmt.Sprintf("%.9g", metric)
 			w.Write([]byte(metricconv))
 			return
 		}
 
 	case "counter":
-		if metric, ok := metric.(storage.Counter); ok {
+		if metric, ok := metric.(models.Counter); ok {
 			metricconv := strconv.Itoa(int(metric))
 			w.Write([]byte(metricconv))
 			return
@@ -84,7 +91,14 @@ func (h *Handler) MetricGet(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) MetricSummary(w http.ResponseWriter, r *http.Request) {
-	metrics := h.Storage.GetAllMetrics()
+	ctx, cancel := context.WithTimeout(context.Background(), timeoutCTX)
+	defer cancel()
+
+	metrics, err := h.Storage.GetAllMetrics(ctx)
+	if err != nil {
+		return
+	}
+
 	w.Header().Set("Content-Type", "text/html")
 	for name, metric := range metrics {
 		valuestring := fmt.Sprintf("%v", metric)
