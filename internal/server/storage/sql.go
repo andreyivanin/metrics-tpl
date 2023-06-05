@@ -34,7 +34,7 @@ func newSQL(ctx context.Context, cfg config.Config) (*memSQL, error) {
 		panic(err)
 	}
 
-	defer db.Close()
+	// defer db.Close()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
@@ -63,21 +63,70 @@ func newSQL(ctx context.Context, cfg config.Config) (*memSQL, error) {
 	return memSQL, nil
 }
 
-func (mS *memSQL) UpdateMetric(ctx context.Context, name, mtype string, m models.Metric) (models.Metric, error) {
+func (ms *memSQL) UpdateMetric(ctx context.Context, name, mtype string, m models.Metric) (models.Metric, error) {
+	var err error
+
 	if ctx.Err() != nil {
 		return nil, ctx.Err()
 	}
 
-	return m, nil
+	tx, err := ms.db.Begin()
+	if err != nil {
+		return nil, err
+	}
+
+	mCurrent, err := ms.GetMetric(ctx, name)
+	var mUpdated models.Metric
+
+	switch mtype {
+	case _GAUGE:
+		if err != nil {
+			_, err = tx.ExecContext(ctx,
+				"INSERT INTO metrics (id, type, value)"+
+					" VALUES($1,$2,$3)", name, mtype, m)
+			return m, tx.Commit()
+		}
+
+		mUpdated = mCurrent
+
+		_, err = tx.ExecContext(ctx,
+			"UPDATE metrics SET value = $2"+
+				" WHERE id = $1", name, mUpdated)
+
+	case _COUNTER:
+		if err != nil {
+			_, err = tx.ExecContext(ctx,
+				"INSERT INTO metrics (id, type, delta)"+
+					" VALUES($1,$2,$3)", name, mtype, m)
+			return m, tx.Commit()
+		}
+
+		mUpdated = mCurrent.(models.Counter) + m.(models.Counter)
+
+		_, err = tx.ExecContext(ctx,
+			"UPDATE metrics SET delta = $2"+
+				" WHERE id = $1", name, mUpdated)
+
+	default:
+		log.Println("wrong metric type")
+	}
+
+	if err != nil {
+		tx.Rollback()
+		return nil, err
+	}
+
+	return mUpdated, tx.Commit()
+
 }
 
-func (mS *memSQL) GetMetric(ctx context.Context, mname string) (models.Metric, error) {
+func (ms *memSQL) GetMetric(ctx context.Context, name string) (models.Metric, error) {
 	if ctx.Err() != nil {
 		return nil, ctx.Err()
 	}
 
-	row := mS.db.QueryRowContext(ctx,
-		"SELECT * FROM metrics WHERE id = $1", mname)
+	row := ms.db.QueryRowContext(ctx,
+		"SELECT * FROM metrics WHERE id = $1", name)
 
 	m := MetricSQL{}
 
@@ -103,13 +152,13 @@ func (mS *memSQL) GetMetric(ctx context.Context, mname string) (models.Metric, e
 
 }
 
-func (mS *memSQL) GetAllMetrics(ctx context.Context) (models.Metrics, error) {
+func (ms *memSQL) GetAllMetrics(ctx context.Context) (models.Metrics, error) {
 	if ctx.Err() != nil {
 		return nil, ctx.Err()
 	}
 	return nil, nil
 }
 
-func (mS *memSQL) GetConfig() config.Config {
-	return mS.config
+func (ms *memSQL) GetConfig() config.Config {
+	return ms.config
 }
