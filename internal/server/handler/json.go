@@ -73,6 +73,54 @@ func (h *Handler) MetricUpdateJSON(w http.ResponseWriter, r *http.Request) {
 	w.Write(metricsJSON)
 }
 
+func (h *Handler) MetricsGroupUpdateJSON(w http.ResponseWriter, r *http.Request) {
+	ctx, cancel := context.WithTimeout(context.Background(), timeoutCTX)
+	defer cancel()
+
+	b, err := io.ReadAll(r.Body)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	jsonMetrics := make([]Metrics, 0, 29)
+
+	if err := json.Unmarshal(b, &jsonMetrics); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	var metric models.Metric
+
+	for _, jsonMetric := range jsonMetrics {
+		switch jsonMetric.MType {
+		case _GAUGE:
+			metric = models.Gauge(*jsonMetric.Value)
+		case _COUNTER:
+			metric = models.Counter(*jsonMetric.Delta)
+		}
+
+		_, err = h.Storage.UpdateMetric(ctx, jsonMetric.ID, jsonMetric.MType, metric)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+	}
+
+	updatedMetrics, err := h.Storage.GetAllMetrics(ctx)
+
+	metricsJSON, err := json.Marshal(updatedMetrics)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write(metricsJSON)
+}
+
 func (h *Handler) MetricGetJSON(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(context.Background(), timeoutCTX)
 	defer cancel()

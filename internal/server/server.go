@@ -39,6 +39,10 @@ func NewRouter(storage Storage) chi.Router {
 		})
 	})
 
+	r.Route("/updates", func(r chi.Router) {
+		r.Post("/", customHandler.MetricsGroupUpdateJSON)
+	})
+
 	r.Route("/value", func(r chi.Router) {
 		r.Post("/", customHandler.MetricGetJSON)
 		r.Route("/{mtype}/{mname}", func(r chi.Router) {

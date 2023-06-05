@@ -127,7 +127,7 @@ func (m *Monitor) Run() error {
 			m.UpdateMetrics()
 			fmt.Println("Metrics update", " - ", time.Now())
 		case <-m.SendTicker.C:
-			err := m.SendMetricsJSON()
+			err := m.SendMetricsGroupJSON()
 			if err != nil {
 				log.Print(err)
 			}

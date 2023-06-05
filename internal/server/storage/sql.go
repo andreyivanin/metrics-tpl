@@ -156,7 +156,45 @@ func (ms *memSQL) GetAllMetrics(ctx context.Context) (models.Metrics, error) {
 	if ctx.Err() != nil {
 		return nil, ctx.Err()
 	}
-	return nil, nil
+
+	metrics := make(models.Metrics)
+
+	rows, err := ms.db.QueryContext(ctx, "SELECT * from metrics")
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	for rows.Next() {
+		var m MetricSQL
+		err := rows.Scan(&m.id, &m.mtype, &m.value, &m.delta)
+		if err != nil {
+			return nil, err
+		}
+
+		var metric models.Metric
+
+		switch m.mtype {
+		case _GAUGE:
+			metric = models.Gauge(m.value.Float64)
+
+		case _COUNTER:
+			metric = models.Counter(m.delta.Int64)
+
+		default:
+			log.Println("wrong metric type")
+		}
+
+		metrics[m.id] = metric
+	}
+
+	err = rows.Err()
+	if err != nil {
+		return nil, err
+	}
+
+	return metrics, nil
 }
 
 func (ms *memSQL) GetConfig() config.Config {
