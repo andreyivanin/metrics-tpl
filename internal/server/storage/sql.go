@@ -75,8 +75,9 @@ func (ms *memSQL) UpdateMetric(ctx context.Context, name, mtype string, m models
 		return nil, err
 	}
 
-	mCurrent, err := ms.GetMetric(ctx, name)
 	var mUpdated models.Metric
+
+	mCurrent, err := ms.GetMetric(ctx, name)
 
 	switch mtype {
 	case _GAUGE:
@@ -87,7 +88,7 @@ func (ms *memSQL) UpdateMetric(ctx context.Context, name, mtype string, m models
 			return m, tx.Commit()
 		}
 
-		mUpdated = mCurrent
+		mUpdated = m.(models.Gauge)
 
 		_, err = tx.ExecContext(ctx,
 			"UPDATE metrics SET value = $2"+
