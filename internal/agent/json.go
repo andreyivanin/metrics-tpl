@@ -145,7 +145,6 @@ func (m *Monitor) SendMetricsGroupJSON() error {
 	request.Header.Set("Content-Type", "application/json")
 
 	response, err := sendRequest(&client, request)
-	// response, err := client.Do(request)
 	if err != nil {
 		return err
 	}
@@ -172,7 +171,7 @@ func (m *Monitor) SendMetricsGroupJSON() error {
 }
 
 func sendRequest(client *http.Client, request *http.Request) (response *http.Response, err error) {
-	var attemtsCount int
+	var attemptsCount int
 	seconds := []int{1, 3, 5}
 
 	waitDuration := func(seconds []int) []time.Duration {
@@ -183,12 +182,16 @@ func sendRequest(client *http.Client, request *http.Request) (response *http.Res
 		return duration
 	}(seconds)
 
-	for attemtsCount < _MAXSENDATTEMTS {
+	for attemptsCount < _MAXSENDATTEMPTS {
 		response, err = client.Do(request)
 		if errors.Is(err, syscall.ECONNREFUSED) {
-			time.Sleep(waitDuration[attemtsCount])
-			attemtsCount++
+			time.Sleep(waitDuration[attemptsCount])
+			attemptsCount++
 			continue
+		}
+
+		if err != nil {
+			return nil, err
 		}
 
 		return response, nil
