@@ -9,6 +9,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"syscall"
 	"time"
 )
 
@@ -96,7 +97,7 @@ func (m *Monitor) SendMetricsGroupJSON() error {
 	url := CreateURLJSON(m.SrvAddr, "updates")
 	client := http.Client{}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 120*time.Second)
 	defer cancel()
 
 	jsonMetrics := make([]Metrics, 0, 29)
@@ -142,7 +143,9 @@ func (m *Monitor) SendMetricsGroupJSON() error {
 	}
 
 	request.Header.Set("Content-Type", "application/json")
-	response, err := client.Do(request)
+
+	response, err := sendRequest(&client, request)
+	// response, err := client.Do(request)
 	if err != nil {
 		return err
 	}
@@ -159,12 +162,39 @@ func (m *Monitor) SendMetricsGroupJSON() error {
 	if err != nil {
 		return err
 	}
+
 	log.Printf("Response body:\n %v\n", string(bodyResp))
 	if err != nil {
 		return err
 	}
 
 	return nil
+}
+
+func sendRequest(client *http.Client, request *http.Request) (response *http.Response, err error) {
+	var attemtsCount int
+	seconds := []int{1, 3, 5}
+
+	waitDuration := func(seconds []int) []time.Duration {
+		duration := make([]time.Duration, len(seconds))
+		for i, sec := range seconds {
+			duration[i] = time.Duration(sec) * time.Second
+		}
+		return duration
+	}(seconds)
+
+	for attemtsCount < _MAXSENDATTEMTS {
+		response, err = client.Do(request)
+		if errors.Is(err, syscall.ECONNREFUSED) {
+			time.Sleep(waitDuration[attemtsCount])
+			attemtsCount++
+			continue
+		}
+
+		return response, nil
+	}
+
+	return nil, err
 }
 
 func CreateURLJSON(srv, path string) string {
