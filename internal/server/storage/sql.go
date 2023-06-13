@@ -4,11 +4,12 @@ import (
 	"context"
 	"database/sql"
 	"log"
-	"metrics-tpl/internal/server/config"
-	"metrics-tpl/internal/server/models"
 	"time"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
+
+	"metrics-tpl/internal/server/config"
+	"metrics-tpl/internal/server/models"
 )
 
 type MetricSQL struct {
