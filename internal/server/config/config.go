@@ -30,6 +30,7 @@ type Config struct {
 	StoreFile        string `env:"STORE_FILE"`
 	RestoreSavedData bool   `env:"RESTORE"`
 	DatabaseDSN      string `env:"DATABASE_DSN"`
+	Key              string `env:"KEY"`
 }
 
 func parseDuration(value string) (time.Duration, error) {
@@ -66,6 +67,7 @@ func parseDurationENV(p *time.Duration, envkey string) error {
 func getFlag(cfg *Config) error {
 	flag.StringVar(&cfg.Address, "a", _SERVERADDRPORT, "server address and port")
 	flag.StringVar(&cfg.StoreFile, "f", _STOREFILE, "server db store file")
+	flag.StringVar(&cfg.Key, "k", "", "key for digital sign")
 	flag.BoolVar(&cfg.RestoreSavedData, "r", cfg.RestoreSavedData, "server restore db from file on start?")
 	flag.Func("i", "server store interval", func(flagValue string) error {
 		valueDur, err := parseDuration(flagValue)

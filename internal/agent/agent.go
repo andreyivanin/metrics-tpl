@@ -2,6 +2,8 @@ package agent
 
 import (
 	"context"
+	"crypto/hmac"
+	"crypto/sha256"
 	"errors"
 	"fmt"
 	"io"
@@ -26,6 +28,7 @@ type Monitor struct {
 	SrvAddr      string
 	UpdateTicker *time.Ticker
 	SendTicker   *time.Ticker
+	Key          string
 	Metrics      map[string]Metric
 }
 
@@ -34,6 +37,7 @@ func NewMonitor(cfg Config) Monitor {
 		SrvAddr:      cfg.Address,
 		UpdateTicker: time.NewTicker(cfg.PollInterval),
 		SendTicker:   time.NewTicker(cfg.ReportInterval),
+		Key:          cfg.Key,
 		Metrics:      make(map[string]Metric, 29),
 	}
 }
@@ -135,6 +139,12 @@ func (m *Monitor) Run() error {
 			fmt.Println("Metrics send", " - ", time.Now())
 		}
 	}
+}
+
+func CreateSign(payload, key []byte) []byte {
+	h := hmac.New(sha256.New, key)
+	h.Write(payload)
+	return h.Sum(nil)
 }
 
 func CreateURL(name string, value Metric, srvaddr string) string {
