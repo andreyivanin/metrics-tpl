@@ -24,8 +24,7 @@ func Sign(key string) func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			receivedSign := r.Header.Get("HashSHA256")
 			if receivedSign == "" {
-				w.Header().Set("Content-Type", "application/json")
-				w.WriteHeader(http.StatusBadRequest)
+				next.ServeHTTP(w, r)
 				return
 			}
 
