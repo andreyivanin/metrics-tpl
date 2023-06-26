@@ -19,7 +19,7 @@ type Storage interface {
 	GetConfig() config.Config
 }
 
-func NewRouter(storage Storage) chi.Router {
+func NewRouter(storage Storage, cfg config.Config) chi.Router {
 	customHandler := handler.NewHandler(storage)
 
 	r := chi.NewRouter()
@@ -30,6 +30,9 @@ func NewRouter(storage Storage) chi.Router {
 	r.Use(middleware.Logger)
 	r.Use(chiMiddleware.Recoverer)
 	r.Use(middleware.GzipHandle)
+	if cfg.Key != "" {
+		r.Use(middleware.Sign(cfg.Key))
+	}
 
 	r.Route("/update", func(r chi.Router) {
 		r.Post("/", customHandler.MetricUpdateJSON)

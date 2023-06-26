@@ -23,7 +23,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	router := server.NewRouter(storage)
+	router := server.NewRouter(storage, config)
 
 	log.Printf("Running http server on port: %s", config.Address)
 

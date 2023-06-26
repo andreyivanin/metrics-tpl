@@ -31,6 +31,7 @@ type Config struct {
 	Address        string `env:"ADDRESS"`
 	ReportInterval time.Duration
 	PollInterval   time.Duration
+	Key            string `env:"KEY"`
 }
 
 func parseDuration(value string) (time.Duration, error) {
@@ -66,6 +67,7 @@ func parseDurationENV(p *time.Duration, envkey string) error {
 
 func getFlag(cfg *Config) error {
 	flag.StringVar(&cfg.Address, "a", _SERVERADDRPORT, "server address and port")
+	flag.StringVar(&cfg.Key, "k", "", "key for digital sign")
 
 	flag.Func("r", "agent report interval", func(flagValue string) error {
 		valueDur, err := parseDuration(flagValue)

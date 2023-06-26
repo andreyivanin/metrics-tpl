@@ -3,6 +3,7 @@ package agent
 import (
 	"bytes"
 	"context"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"io"
@@ -140,6 +141,11 @@ func (m *Monitor) SendMetricsGroupJSON() error {
 	request, err := http.NewRequestWithContext(ctx, http.MethodPost, url, body)
 	if err != nil {
 		return err
+	}
+
+	if m.Key != "" {
+		sign := CreateSign(body.Bytes(), []byte(m.Key))
+		request.Header.Set("HashSHA256", hex.EncodeToString(sign))
 	}
 
 	request.Header.Set("Content-Type", "application/json")
