@@ -112,7 +112,6 @@ func (h *Handler) MetricsGroupUpdateJSON(w http.ResponseWriter, r *http.Request)
 
 	metricsJSON, err := json.Marshal(updatedMetrics)
 	if err != nil {
-		w.Header().Set("Content-Type", "application/json")
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
