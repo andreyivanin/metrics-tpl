@@ -30,9 +30,9 @@ func NewRouter(storage Storage, cfg config.Config) chi.Router {
 	r.Use(middleware.Logger)
 	r.Use(chiMiddleware.Recoverer)
 	r.Use(middleware.GzipHandle)
-	if cfg.Key != "" {
-		r.Use(middleware.Sign(cfg.Key))
-	}
+	// if cfg.Key != "" {
+	// 	r.Use(middleware.Sign(cfg.Key))
+	// }
 
 	r.Route("/update", func(r chi.Router) {
 		r.Post("/", customHandler.MetricUpdateJSON)
