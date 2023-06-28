@@ -34,7 +34,7 @@ func (m *Monitor) SendMetricsJSON() error {
 	defer cancel()
 
 	err := func(ctx context.Context) error {
-		for name, metric := range m.Metrics {
+		for name, metric := range m.Storage.Metrics {
 			jsonMetric := Metrics{}
 
 			switch metric := metric.(type) {
@@ -94,17 +94,14 @@ func (m *Monitor) SendMetricsJSON() error {
 	return nil
 }
 
-func (m *Monitor) SendMetricsGroupJSON() error {
+func (m *Monitor) SendMetricsGroupJSON(ctx context.Context) error {
 	url := CreateURLJSON(m.SrvAddr, "updates")
 	client := http.Client{}
-
-	ctx, cancel := context.WithTimeout(context.Background(), 120*time.Second)
-	defer cancel()
 
 	jsonMetrics := make([]Metrics, 0, 29)
 
 	err := func(ctx context.Context) error {
-		for name, metric := range m.Metrics {
+		for name, metric := range m.Storage.Metrics {
 			jsonMetric := Metrics{}
 
 			switch metric := metric.(type) {

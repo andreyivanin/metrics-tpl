@@ -17,4 +17,9 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	if cfg.RateLimit != 0 {
+		monitor.NewRateLimiter()
+	}
+
 }

@@ -20,6 +20,8 @@ const (
 	_REPORTINTERVALENV = "REPORT_INTERVAL"
 
 	_MAXSENDATTEMPTS = 3
+
+	_RATELIMIT = 0
 )
 
 var (
@@ -32,6 +34,7 @@ type Config struct {
 	ReportInterval time.Duration
 	PollInterval   time.Duration
 	Key            string `env:"KEY"`
+	RateLimit      int    `env:"RATE_LIMIT"`
 }
 
 func parseDuration(value string) (time.Duration, error) {
@@ -68,6 +71,7 @@ func parseDurationENV(p *time.Duration, envkey string) error {
 func getFlag(cfg *Config) error {
 	flag.StringVar(&cfg.Address, "a", _SERVERADDRPORT, "server address and port")
 	flag.StringVar(&cfg.Key, "k", "", "key for digital sign")
+	flag.IntVar(&cfg.RateLimit, "l", _RATELIMIT, "rate limit (number of requests per minute)")
 
 	flag.Func("r", "agent report interval", func(flagValue string) error {
 		valueDur, err := parseDuration(flagValue)
@@ -116,6 +120,7 @@ func GetConfig() (Config, error) {
 		Address:        _SERVERADDRPORT,
 		PollInterval:   _POLLINTERVAL,
 		ReportInterval: _REPORTINTERVAL,
+		RateLimit:      _RATELIMIT,
 	}
 
 	err = getFlag(&cfg)
